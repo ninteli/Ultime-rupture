@@ -273,6 +273,320 @@
     <!-- Scripts logiques et esthétiques -->
     <script>
         // 1. GESTION DES DATES POUR LE TIMER (Cible : 6 Juin 2026)
+        // Correction de la gestion des fuseaux horaires pour être 100% robuste sur mobile :
+        // Le 6 Juin 2026 à 01:00 CEST correspond au 5 Juin 2026 à 23:00 UTC (GMT).
+        // Le 6 Juin 2026 à 00:20 CEST correspond au 5 Juin 2026 à 22:20 UTC (GMT).
+        const eventDate = Date.UTC(2026, 5, 5, 23, 0, 0); // Mois indexé à partir de 0 (5 = Juin)
+        const doorsDate = Date.UTC(2026, 5, 5, 22, 20, 0);
+
+        function updateCountdownElement(prefix, targetTime) {
+            const now = Date.now();
+            const distance = targetTime - now;
+
+            if (distance < 0) {
+                document.getElementById(`${prefix}-days`).innerText = "00";
+                document.getElementById(`${prefix}-hours`).innerText = "00";
+                document.getElementById(`${prefix}-minutes`).innerText = "00";
+                document.getElementById(`${prefix}-seconds`).innerText = "00";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById(`${prefix}-days`).innerText = days.toString().padStart(2, '0');
+            document.getElementById(`${prefix}-hours`).innerText = hours.toString().padStart(2, '0');
+            document.getElementById(`${prefix}-minutes`).innerText = minutes.toString().padStart(2, '0');
+            document.getElementById(`${prefix}-seconds`).innerText = seconds.toString().padStart(2, '0');
+        }
+
+        function refreshTimers() {
+            updateCountdownElement('e', eventDate);
+            updateCountdownElement('d', doorsDate);
+        }
+
+        setInterval(refreshTimers, 1000);
+        refreshTimers(); // Appel immédiat au démarrage
+
+
+        // 2. FOND ANIMÉ EN PARTICULES SUR CANEVAS (Glace & Braises)
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        const maxParticles = 80;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height + canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = -(Math.random() * 1.5 + 0.5);
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                // Aléatoire entre bleu céleste (glace) et doré/rouge (braise)
+                const isIce = Math.random() > 0.4;
+                if (isIce) {
+                    this.color = `rgba(${Math.floor(Math.random() * 50 + 14)}, ${Math.floor(Math.random() * 100 + 155)}, 255, ${Math.random() * 0.4 + 0.2})`;
+                } else {
+                    this.color = `rgba(245, ${Math.floor(Math.random() * 100 + 100)}, 11, ${Math.random() * 0.4 + 0.2})`;
+                }
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                if (this.y < -10) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = this.size * 2;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0; // Reset pour les performances
+            }
+        }
+
+        // Initialisation des particules
+        for (let i = 0; i < maxParticles; i++) {
+            particles.push(new Particle());
+            // Distribuer initialement sur l'écran
+            particles[i].y = Math.random() * canvas.height;
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dessin de quelques nébuleuses en arrière-plan
+            const gradient = ctx.createRadialGradient(canvas.width / 4, canvas.height / 3, 10, canvas.width / 4, canvas.height / 3, canvas.width / 1.5);
+            gradient.addColorStop(0, 'rgba(14, 165, 233, 0.08)');
+            gradient.addColorStop(1, 'rgba(3, 7, 18, 0)');
+            ctx.fillS        /* Style spécifique pour les segments de temps */
+        .time-box {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .time-box:hover {
+            transform: scale(1.05);
+        }
+
+        /* Masque pour le canevas de fond */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="text-gray-100 flex flex-col min-h-screen relative">
+
+    <!-- Canevas interactif pour l'ambiance de fond (particules de glace et de braises) -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Header / Barre de navigation thématique -->
+    <header class="w-full py-4 px-6 z-10 border-b border-white/5 bg-slate-950/40 backdrop-blur-md flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <span class="bg-sky-500 text-slate-950 font-bold px-2.5 py-1 rounded text-xs tracking-wider uppercase font-fortnite">Live</span>
+            <span class="text-sm font-semibold tracking-widest text-gray-400 uppercase">Événement Fortnite 2026</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="https://www.epicgames.com/fortnite/fr/home" target="_blank" rel="noopener noreferrer" class="text-xs text-gray-400 hover:text-white transition-colors">Site Epic Games <i class="fa-solid fa-arrow-up-right-from-square ml-1 text-[10px]"></i></a>
+        </div>
+    </header>
+
+    <!-- Contenu Principal -->
+    <main class="flex-grow flex flex-col items-center justify-center px-4 py-10 z-10 max-w-5xl mx-auto w-full">
+        
+        <!-- Badge Événement -->
+        <div class="mb-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest animate-pulse flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-red-500"></span> Saison 2 : Chapitre 5
+        </div>
+
+        <!-- Titre Principal -->
+        <h1 class="text-center mb-1">
+            <span class="block text-xl md:text-2xl text-slate-300 font-semibold tracking-wider uppercase">FORTNITE</span>
+            <span class="block text-5xl md:text-8xl font-fortnite tracking-wide uppercase mt-1 gradient-text-blue filter drop-shadow-lg">
+                ULTIME RUPTURE
+            </span>
+        </h1>
+        <p class="text-center text-sm md:text-base text-gray-400 max-w-xl mb-10 font-medium">
+            L'issue de la Rivalité se joue ici. L'avenir sera scellé définitivement. Préparez-vous à l'impact.
+        </p>
+
+        <!-- Grille des Timers -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full mb-10">
+            
+            <!-- GROS TIMER : DÉBUT DE L'ÉVÉNEMENT (1H00 CEST) -->
+            <div class="lg:col-span-8 rupture-card border border-sky-500/20 border-glow-blue rounded-2xl p-6 md:p-8 flex flex-col justify-between relative overflow-hidden">
+                <!-- Déco de fond -->
+                <div class="absolute -right-16 -top-16 w-48 h-48 bg-sky-500/5 rounded-full blur-3xl"></div>
+                
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-sky-400 uppercase tracking-widest">Compte à rebours principal</span>
+                            <h2 class="text-2xl md:text-3xl font-fortnite text-white tracking-wide mt-1 uppercase">DÉBUT DE L'ÉVÉNEMENT</h2>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-xs text-gray-500 uppercase font-semibold">Samedi 6 Juin</span>
+                            <span class="text-sm font-bold text-sky-400">01H00 CEST</span>
+                        </div>
+                    </div>
+
+                    <!-- Grille du Timer Principal -->
+                    <div class="grid grid-cols-4 gap-2 md:gap-4 my-6">
+                        <!-- Jours -->
+                        <div class="time-box rounded-xl p-3 md:p-5 flex flex-col items-center">
+                            <span id="e-days" class="text-4xl md:text-6xl font-fortnite text-white glow-blue">00</span>
+                            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider mt-2">Jours</span>
+                        </div>
+                        <!-- Heures -->
+                        <div class="time-box rounded-xl p-3 md:p-5 flex flex-col items-center">
+                            <span id="e-hours" class="text-4xl md:text-6xl font-fortnite text-white glow-blue">00</span>
+                            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider mt-2">Heures</span>
+                        </div>
+                        <!-- Minutes -->
+                        <div class="time-box rounded-xl p-3 md:p-5 flex flex-col items-center">
+                            <span id="e-minutes" class="text-4xl md:text-6xl font-fortnite text-white glow-blue">00</span>
+                            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider mt-2">Minutes</span>
+                        </div>
+                        <!-- Secondes -->
+                        <div class="time-box rounded-xl p-3 md:p-5 flex flex-col items-center">
+                            <span id="e-seconds" class="text-4xl md:text-6xl font-fortnite text-white glow-blue">00</span>
+                            <span class="text-[10px] md:text-xs font-bold text-sky-400 uppercase tracking-wider mt-2">Secondes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-center gap-3 text-xs text-sky-400/80 bg-sky-500/5 p-3 rounded-lg border border-sky-500/10">
+                    <i class="fa-solid fa-circle-info animate-pulse"></i>
+                    <span>Tenez-vous prêt ! À 1h00 pile, l'événement débutera en direct dans le jeu.</span>
+                </div>
+            </div>
+
+            <!-- PETIT TIMER : OUVERTURE DES PORTES (0H20 CEST) -->
+            <div class="lg:col-span-4 rupture-card border border-amber-500/20 border-glow-gold rounded-2xl p-6 md:p-8 flex flex-col justify-between relative overflow-hidden">
+                <!-- Déco de fond -->
+                <div class="absolute -right-16 -bottom-16 w-36 h-36 bg-amber-500/5 rounded-full blur-3xl"></div>
+
+                <div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <span class="text-xs font-bold text-amber-500 uppercase tracking-widest">Conseillé pour se connecter</span>
+                            <h2 class="text-xl md:text-2xl font-fortnite text-white tracking-wide mt-1 uppercase">OUVERTURE DES PORTES</h2>
+                        </div>
+                    </div>
+
+                    <div class="text-left mb-4">
+                        <span class="block text-xs text-gray-500 uppercase font-semibold">Dans la nuit de Vendredi à Samedi</span>
+                        <span class="text-lg font-bold text-amber-500 font-fortnite tracking-wider">00H20 CEST</span>
+                    </div>
+
+                    <!-- Grille du Petit Timer -->
+                    <div class="grid grid-cols-4 gap-2 my-4">
+                        <!-- Jours -->
+                        <div class="time-box rounded-lg p-2 flex flex-col items-center">
+                            <span id="d-days" class="text-xl md:text-2xl font-fortnite text-amber-400">00</span>
+                            <span class="text-[8px] font-bold text-amber-500 uppercase tracking-wider mt-1">J</span>
+                        </div>
+                        <!-- Heures -->
+                        <div class="time-box rounded-lg p-2 flex flex-col items-center">
+                            <span id="d-hours" class="text-xl md:text-2xl font-fortnite text-amber-400">00</span>
+                            <span class="text-[8px] font-bold text-amber-500 uppercase tracking-wider mt-1">H</span>
+                        </div>
+                        <!-- Minutes -->
+                        <div class="time-box rounded-lg p-2 flex flex-col items-center">
+                            <span id="d-minutes" class="text-xl md:text-2xl font-fortnite text-amber-400">00</span>
+                            <span class="text-[8px] font-bold text-amber-500 uppercase tracking-wider mt-1">M</span>
+                        </div>
+                        <!-- Secondes -->
+                        <div class="time-box rounded-lg p-2 flex flex-col items-center">
+                            <span id="d-seconds" class="text-xl md:text-2xl font-fortnite text-amber-400">00</span>
+                            <span class="text-[8px] font-bold text-amber-500 uppercase tracking-wider mt-1">S</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex flex-col gap-2">
+                    <div class="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/5 p-3 rounded-lg border border-amber-500/10">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>File d'attente prévue ! Connectez-vous dès 0h20.</span>
+                    </div>
+                    <!-- Bouton Rappel -->
+                    <button id="btn-remind" class="w-full py-2 bg-amber-500 hover:bg-amber-600 active:translate-y-0.5 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-bell"></i> M'ajouter un rappel
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section d'informations additionnelles style Dossier Confidentiel -->
+        <div class="w-full rupture-card border border-white/5 rounded-2xl p-6 md:p-8">
+            <h3 class="text-lg font-fortnite text-white tracking-widest uppercase mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-folder-open text-sky-500"></i> Dossier de mission : Rivalité Finale
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-400">
+                <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                    <h4 class="text-white font-bold mb-2 uppercase text-xs tracking-wider text-sky-400">1. L'impact de la rupture</h4>
+                    <p class="leading-relaxed text-xs">Le point zéro montre des signes d'instabilité critique. Les réalités convergent et provoquent d'immenses fissures glacées et dorées à travers l'île.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                    <h4 class="text-white font-bold mb-2 uppercase text-xs tracking-wider text-amber-500">2. Recommandations d'accès</h4>
+                    <p class="leading-relaxed text-xs">Évitez les déconnexions de dernière minute. Epic Games conseille le lancement du client de jeu au moins 40 minutes avant le lancement officiel.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                    <h4 class="text-white font-bold mb-2 uppercase text-xs tracking-wider text-red-400">3. Récompense de présence</h4>
+                    <p class="leading-relaxed text-xs">Tous les joueurs participant activement ou assistant à l'événement en direct recevront un cosmétique exclusif en fin de saison.</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="w-full py-6 mt-auto z-10 border-t border-white/5 bg-slate-950/60 backdrop-blur-md text-center text-xs text-gray-500 px-4">
+        <p>© 2026 Epic Games, Inc. Ce site est un compte à rebours de fan créé pour la communauté Fortnite.</p>
+        <p class="mt-1">Design inspiré de l'événement officiel <span class="text-sky-400">Ultime Rupture</span>.</p>
+    </footer>
+
+    <!-- Notification Custom (Remplace Alert) -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 border border-sky-500/30 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <i class="fa-solid fa-circle-check text-sky-400 text-lg"></i>
+            <div>
+                <p class="font-bold text-xs uppercase tracking-wider text-sky-400">Rappel Programmé</p>
+                <p class="text-xs text-gray-400" id="toast-msg">Le fichier de calendrier a été téléchargé !</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts logiques et esthétiques -->
+    <script>
+        // 1. GESTION DES DATES POUR LE TIMER (Cible : 6 Juin 2026)
         // Heure d'été de Paris (CEST = GMT+0200)
         const targetYear = 2026;
         const eventDate = new Date(`June 6, ${targetYear} 01:00:00 GMT+0200`).getTime();
@@ -379,3 +693,4 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const gradient2 = ctx.createRadialGradient(canvas.width * 0.8, canvas.height * 0.7, 10, canvas
+                                                       
